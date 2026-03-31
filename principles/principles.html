@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原则卡片 - Principle Cards</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1, h2, h3 { margin: 0 0 15px 0; }
+        
+        /* 导航 */
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; background: white; padding: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .nav button { padding: 10px 20px; border: none; background: transparent; cursor: pointer; border-radius: 6px; font-weight: 600; }
+        .nav button.active { background: var(--primary); color: white; }
+
+        /* 模块切换 */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* 网格布局 */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        
+        /* 卡片样式 */
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); position: relative; }
+        .card-id { font-size: 0.75rem; color: #64748b; font-family: monospace; margin-bottom: 10px; display: block; }
+        .card h4 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: 5px; }
+        .card p { white-space: pre-wrap; font-size: 0.9rem; margin: 5px 0 15px 0; }
+        .card img { max-width: 100%; border-radius: 6px; margin-top: 10px; }
+        
+        /* 表单样式 */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; margin-bottom: 5px; font-size: 0.9rem; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+        textarea { min-height: 100px; }
+        .btn { background: var(--primary); color: white; padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background-color 0.3s, transform 0.1s; }
+        .btn:hover { transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+        .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
+        .btn-danger { background: #dc2626; }
+        .btn-success { background: #16a34a; }
+        
+        /* 表格样式 */
+        table { font-family: 'Segoe UI', sans-serif; width: 100%; border-collapse: collapse; }
+        th { padding: 12px; text-align: left; border-bottom: 2px solid var(--border); font-weight: 600; background-color: #f8fafc; }
+        td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:hover { background-color: #f1f5f9; }
+        tr { transition: background-color 0.2s; }
+
+        /* 集合连线视图 */
+        .collection-board { background: #e2e8f0; border-radius: 12px; padding: 40px; min-height: 400px; position: relative; overflow: auto; }
+        .collection-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>♠️A 原则卡片系统</h1>
+
+    <div class="nav">
+        <button class="active" onclick="switchTab('create')">新建事件卡片</button>
+        <button onclick="switchTab('decks')">我的卡片盒子</button>
+        <button onclick="switchTab('collections')">原则分类链接库</button>
+        <button onclick="switchTab('basics')">我的基本原则</button>
+        <button onclick="switchTab('others')">他人原则收集</button>
+        <button onclick="clearAllData()" style="margin-left:auto; background:#dc2626; color:white;">清除所有数据</button>
+    </div>
+
+    <!-- 1. 新建事件卡片 -->
+    <div id="create" class="section active">
+        <div class="card" style="max-width: 800px;">
+            <h2>记录新的事件原则</h2>
+            <form id="cardForm">
+                <div class="form-group">
+                    <label>1. 情况 (客观还原) <span style="color: red;">*</span></label>
+                    <textarea id="f1" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>2. 核心属性与归类 <span style="color: red;">*</span></label>
+                    <input type="text" id="f2" placeholder="例如：人际关系、投资决策、时间管理" required>
+                </div>
+                <div class="form-group">
+                    <label>3. 应用的原则与权衡 <span style="color: red;">*</span></label>
+                    <textarea id="f3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>4. 深度思考</label>
+                    <textarea id="f4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>5. 新的原则补充 / 修正</label>
+                    <textarea id="f5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>6. 选择牌组 <span style="color: red;">*</span></label>
+                    <select id="deckSelect" required>
+                        <option value="">-- 选择卡片盒子 --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>7. 关联卡片编号 (可选，填ID)</label>
+                    <input type="text" id="f6" placeholder="例如：KP-2026-001">
+                </div>
+                <div class="form-group">
+                    <label>图片证据 (可选)</label>
+                    <input type="file" id="imageUpload" accept="image/*">
+                </div>
+                <button type="submit" class="btn">保存卡片</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. 我的卡片盒子 -->
+    <div id="decks" class="section">
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>创建新卡片盒子</h3>
+            <input type="text" id="deckName" placeholder="盒子名称，如：投资决策、人际关系">
+            <button class="btn" onclick="createDeck()" style="margin-top:10px">创建卡片盒子</button>
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>搜索卡片</h3>
+            <input type="text" id="deckSearch" placeholder="搜索卡片内容..." oninput="searchCards()">
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>导出数据</h3>
+            <button class="btn btn-success" onclick="exportBoxes()">导出卡片盒子数据</button>
+        </div>
+        <div id="deckList"></div>
+    </div>
+
+    <!-- 3. 我的基本原则 -->
+    <div id="basics" class="section">
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>添加新的基本原则</h3>
+            <input type="text" id="basicInput" placeholder="例如：永远不要做空...">
+            <button class="btn" onclick="addBasic()" style="margin-top:10px">添加</button>
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>导出数据</h3>
+            <button class="btn btn-success" onclick="exportBasics()">导出基本原则数据</button>
+        </div>
+        <div id="basicList"></div>
+    </div>
+
+    <!-- 4. 他人原则收集 -->
+    <div id="others" class="section">
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>收录他人原则</h3>
+            <input type="text" id="otherSource" placeholder="来源 (如：巴菲特)">
+            <input type="text" id="otherContent" placeholder="原则内容" style="margin-top:10px">
+            <button class="btn" onclick="addOther()" style="margin-top:10px">收录</button>
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>导出数据</h3>
+            <button class="btn btn-success" onclick="exportOthers()">导出他人原则数据</button>
+        </div>
+        <div id="otherList"></div>
+    </div>
+
+    <!-- 5. 原则分类链接库 -->
+    <div id="collections" class="section">
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>创建新链接库</h3>
+            <input type="text" id="collectionName" placeholder="链接库名称，如：投资决策流程">
+            <button class="btn" onclick="createCollection()" style="margin-top:10px">创建链接库</button>
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>搜索链接库</h3>
+            <input type="text" id="collectionSearch" placeholder="搜索链接库名称..." oninput="searchCollections()">
+        </div>
+        <div class="card" style="margin-bottom: 20px;">
+            <h3>导出数据</h3>
+            <button class="btn btn-success" onclick="exportCollections()">导出链接库数据</button>
+        </div>
+        <div id="collectionList"></div>
+    </div>
+
+</div>
+
+<script>
+    // 数据结构初始化
+    let data = {
+        boxes: [], // 卡片盒子
+        cards: [],
+        basics: [],
+        others: [],
+        collections: []
+    };
+
+    // 加载本地存储
+    function loadData() {
+        const saved = localStorage.getItem('principleData');
+        if (saved) {
+            try {
+                const savedData = JSON.parse(saved);
+                // 合并保存的数据和默认数据结构，确保新字段存在
+                data = {
+                    boxes: [],
+                    cards: [],
+                    basics: [],
+                    others: [],
+                    collections: [],
+                    ...savedData
+                };
+            } catch(e) {
+                console.error('加载数据失败:', e);
+            }
+        }
+        renderAll();
+    }
+
+    // 保存数据
+    function saveData() {
+        localStorage.setItem('principleData', JSON.stringify(data));
+        renderAll();
+    }
+
+    // 生成唯一ID
+    function generateId(type) {
+        const year = new Date().getFullYear();
+        if(type === 'card') {
+            const count = data.cards.filter(c => c.id.startsWith(`KP-${year}`)).length + 1;
+            return `KP-${year}-${String(count).padStart(3, '0')}`;
+        } else if(type === 'basic') {
+            const count = data.basics.length + 1;
+            return `Mine-${String(count).padStart(3, '0')}`;
+        } else if(type === 'collection') {
+            const count = data.collections.filter(c => c.id.startsWith(`C-${year}`)).length + 1;
+            return `C-${year}-${String(count).padStart(3, '0')}`;
+        } else {
+            return 'P-' + Date.now();
+        }
+    }
+
+    // 切换导航
+    function switchTab(tabId) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.target.classList.add('active');
+    }
+
+    // 1. 处理新建卡片表单
+    document.getElementById('cardForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // 验证1、2、3、6字段
+        const f1 = document.getElementById('f1').value;
+        const f2 = document.getElementById('f2').value;
+        const f3 = document.getElementById('f3').value;
+        const boxId = document.getElementById('deckSelect').value;
+        
+        if(!f1) {
+            alert('请填写1. 情况');
+            return;
+        }
+        if(!f2) {
+            alert('请填写2. 核心属性与归类');
+            return;
+        }
+        if(!f3) {
+            alert('请填写3. 应用的原则与权衡');
+            return;
+        }
+        if(!boxId) {
+            alert('请选择6. 卡片盒子');
+            return;
+        }
+        
+        const newCard = {
+            id: generateId('card'),
+            f1: f1,
+            f2: f2,
+            f3: f3,
+            f4: document.getElementById('f4').value,
+            f5: document.getElementById('f5').value,
+            f6: document.getElementById('f6').value,
+            boxId: boxId,
+            img: null,
+            date: new Date().toLocaleString()
+        };
+
+        // 处理图片
+        const fileInput = document.getElementById('imageUpload');
+        if (fileInput.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                newCard.img = event.target.result;
+                data.cards.unshift(newCard);
+                saveData();
+                alert('卡片保存成功！');
+                document.getElementById('cardForm').reset();
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            data.cards.unshift(newCard);
+            saveData();
+            alert('卡片保存成功！');
+            document.getElementById('cardForm').reset();
+        }
+    });
+
+    // 渲染所有卡片
+    function renderCards() {
+        const grid = document.getElementById('cardsGrid');
+        grid.innerHTML = '';
+        data.cards.forEach(card => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <span class="card-id">${card.id}</span>
+                <h4>1. 情况</h4><p>${card.f1}</p>
+                <h4>2. 归类</h4><p>${card.f2}</p>
+                <h4>3. 原则权衡</h4><p>${card.f3}</p>
+                <h4>4. 思考</h4><p>${card.f4}</p>
+                <h4>5. 补充</h4><p>${card.f5}</p>
+                ${card.f6 ? `<div><strong>关联:</strong> ${card.f6}</div>` : ''}
+                ${card.img ? `<img src="${card.img}">` : ''}
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn" onclick="editCard('${card.id}')" style="margin-right:10px;">编辑</button>
+                    <button class="btn btn-danger" onclick="deleteCard('${card.id}')">删除</button>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    // 编辑卡片
+    function editCard(id) {
+        const card = data.cards.find(c => c.id === id);
+        if(!card) return;
+        
+        // 转义HTML特殊字符
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        
+        const form = document.createElement('div');
+        form.className = 'card';
+        form.style.maxWidth = '800px';
+        form.style.position = 'fixed';
+        form.style.top = '50%';
+        form.style.left = '50%';
+        form.style.transform = 'translate(-50%, -50%)';
+        form.style.zIndex = '1000';
+        form.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+        form.innerHTML = `
+            <h2>编辑卡片</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId" value="${escapeHtml(card.id)}">
+                <div class="form-group">
+                    <label>1. 情况 (客观还原) <span style="color: red;">*</span></label>
+                    <textarea id="editF1" required>${escapeHtml(card.f1)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>2. 核心属性与归类 <span style="color: red;">*</span></label>
+                    <input type="text" id="editF2" value="${escapeHtml(card.f2)}" placeholder="例如：人际关系、投资决策、时间管理" required>
+                </div>
+                <div class="form-group">
+                    <label>3. 应用的原则与权衡 <span style="color: red;">*</span></label>
+                    <textarea id="editF3" required>${escapeHtml(card.f3)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>4. 深度思考</label>
+                    <textarea id="editF4">${escapeHtml(card.f4)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>5. 新的原则补充 / 修正</label>
+                    <textarea id="editF5">${escapeHtml(card.f5)}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>6. 关联卡片编号 (可选，填ID)</label>
+                    <input type="text" id="editF6" value="${escapeHtml(card.f6 || '')}" placeholder="例如：P-123456">
+                </div>
+                <div class="form-group">
+                    <label>卡片盒子 <span style="color: red;">*</span></label>
+                    <select id="editBoxSelect" required>
+                        <option value="">-- 选择卡片盒子 --</option>
+                        ${data.boxes && Array.isArray(data.boxes) ? data.boxes.map(box => `<option value="${escapeHtml(box.id)}" ${card.boxId === box.id ? 'selected' : ''}>${escapeHtml(box.name)}</option>`).join('') : ''}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>图片证据 (可选)</label>
+                    <input type="file" id="editImageUpload" accept="image/*">
+                    ${card.img ? `<img src="${escapeHtml(card.img)}" style="max-width:200px; margin-top:10px;">` : ''}
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="btn btn-success">保存修改</button>
+                    <button type="button" class="btn" onclick="this.closest('.card').remove()">取消</button>
+                </div>
+            </form>
+        `;
+        document.body.appendChild(form);
+        
+        // 处理编辑表单提交
+        const editForm = form.querySelector('#editForm');
+        if (editForm) {
+            editForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const cardId = document.getElementById('editId').value;
+                const cardToUpdate = data.cards.find(c => c.id === cardId);
+                
+                if(cardToUpdate) {
+                    cardToUpdate.f1 = document.getElementById('editF1').value;
+                    cardToUpdate.f2 = document.getElementById('editF2').value;
+                    cardToUpdate.f3 = document.getElementById('editF3').value;
+                    cardToUpdate.f4 = document.getElementById('editF4').value;
+                    cardToUpdate.f5 = document.getElementById('editF5').value;
+                    cardToUpdate.f6 = document.getElementById('editF6').value;
+                    cardToUpdate.boxId = document.getElementById('editBoxSelect').value;
+                    
+                    // 处理图片
+                    const fileInput = document.getElementById('editImageUpload');
+                    if(fileInput.files.length > 0) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            cardToUpdate.img = event.target.result;
+                            saveData();
+                            form.remove();
+                            alert('卡片更新成功！');
+                        };
+                        reader.readAsDataURL(fileInput.files[0]);
+                    } else {
+                        saveData();
+                        form.remove();
+                        alert('卡片更新成功！');
+                    }
+                }
+            });
+        }
+    }
+
+    function deleteCard(id) {
+        if(confirm('确定删除这张卡片吗？')) {
+            const confirmInput = prompt('请输入 "DELETE" 确认删除操作：');
+            if(confirmInput === 'DELETE') {
+                data.cards = data.cards.filter(c => c.id !== id);
+                saveData();
+                alert('卡片已删除');
+            }
+        }
+    }
+
+    // 2. 基本原则逻辑
+    function addBasic() {
+        const val = document.getElementById('basicInput').value;
+        if(val) {
+            data.basics.push({ id: generateId('basic'), content: val });
+            document.getElementById('basicInput').value = '';
+            saveData();
+            alert('基本原则已添加');
+        } else {
+            alert('请输入原则内容');
+        }
+    }
+
+    function renderBasics() {
+        const list = document.getElementById('basicList');
+        if (!list) return;
+        list.innerHTML = '<div class="grid">';
+        if (data.basics && Array.isArray(data.basics)) {
+            data.basics.forEach(b => {
+                list.innerHTML += `
+                    <div class="card">
+                        <span class="card-id">${b.id}</span>
+                        <p style="font-size:1.1rem; font-weight:bold;">${b.content}</p>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button class="btn" onclick="editBasic('${b.id}')">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteBasic('${b.id}')">移除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        list.innerHTML += '</div>';
+    }
+    
+    function editBasic(id) {
+        const basic = data.basics.find(b => b.id === id);
+        if(!basic) return;
+        
+        // 转义HTML特殊字符
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        
+        const form = document.createElement('div');
+        form.className = 'card';
+        form.style.maxWidth = '600px';
+        form.style.position = 'fixed';
+        form.style.top = '50%';
+        form.style.left = '50%';
+        form.style.transform = 'translate(-50%, -50%)';
+        form.style.zIndex = '1000';
+        form.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+        form.innerHTML = `
+            <h2>编辑基本原则</h2>
+            <form id="editBasicForm">
+                <input type="hidden" id="editBasicId" value="${escapeHtml(basic.id)}">
+                <div class="form-group">
+                    <label>原则内容</label>
+                    <textarea id="editBasicContent" required>${escapeHtml(basic.content)}</textarea>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="btn btn-success">保存修改</button>
+                    <button type="button" class="btn" onclick="this.closest('.card').remove()">取消</button>
+                </div>
+            </form>
+        `;
+        document.body.appendChild(form);
+        
+        // 处理编辑表单提交
+        const editBasicForm = form.querySelector('#editBasicForm');
+        if (editBasicForm) {
+            editBasicForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const basicId = document.getElementById('editBasicId').value;
+                const basicToUpdate = data.basics.find(b => b.id === basicId);
+                if(basicToUpdate) {
+                    basicToUpdate.content = document.getElementById('editBasicContent').value;
+                    saveData();
+                    form.remove();
+                    alert('基本原则更新成功！');
+                }
+            });
+        }
+    }
+
+    function deleteBasic(id) {
+        if(confirm('确定移除这个基本原则吗？')) {
+            const confirmInput = prompt('请输入 "DELETE" 确认删除操作：');
+            if(confirmInput === 'DELETE') {
+                data.basics = data.basics.filter(b => b.id !== id);
+                saveData();
+                alert('基本原则已移除');
+            }
+        }
+    }
+
+    // 3. 他人原则逻辑
+    function addOther() {
+        const source = document.getElementById('otherSource').value;
+        const content = document.getElementById('otherContent').value;
+        if(source && content) {
+            const newId = 'Others-' + (data.others.length + 1);
+            data.others.push({ id: newId, source, content });
+            document.getElementById('otherSource').value = '';
+            document.getElementById('otherContent').value = '';
+            saveData();
+            alert('他人原则已添加');
+        } else {
+            alert('请填写来源和原则内容');
+        }
+    }
+
+    function renderOthers() {
+        const list = document.getElementById('otherList');
+        if (!list) return;
+        list.innerHTML = '<div class="grid">';
+        if (data.others && Array.isArray(data.others)) {
+            data.others.forEach((o, index) => {
+                list.innerHTML += `
+                    <div class="card">
+                        <div style="font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">${index + 1}</div>
+                        <div style="font-weight: bold; margin-bottom: 5px; color: var(--primary);">${o.source}</div>
+                        <div style="margin-bottom: 15px;">${o.content}</div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn" onclick="editOther('${o.id}')">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteOther('${o.id}')">删除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        list.innerHTML += '</div>';
+    }
+
+    function editOther(id) {
+        const other = data.others.find(o => o.id === id);
+        if(!other) return;
+        
+        // 转义HTML特殊字符
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+        
+        const form = document.createElement('div');
+        form.className = 'card';
+        form.style.maxWidth = '600px';
+        form.style.position = 'fixed';
+        form.style.top = '50%';
+        form.style.left = '50%';
+        form.style.transform = 'translate(-50%, -50%)';
+        form.style.zIndex = '1000';
+        form.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+        form.innerHTML = `
+            <h2>编辑他人原则</h2>
+            <form id="editOtherForm">
+                <input type="hidden" id="editOtherId" value="${escapeHtml(other.id)}">
+                <div class="form-group">
+                    <label>来源</label>
+                    <input type="text" id="editOtherSource" value="${escapeHtml(other.source)}" placeholder="如：巴菲特" required>
+                </div>
+                <div class="form-group">
+                    <label>原则内容</label>
+                    <textarea id="editOtherContent" required>${escapeHtml(other.content)}</textarea>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="submit" class="btn btn-success">保存修改</button>
+                    <button type="button" class="btn" onclick="this.closest('.card').remove()">取消</button>
+                </div>
+            </form>
+        `;
+        document.body.appendChild(form);
+        
+        // 处理编辑表单提交
+        const editOtherForm = form.querySelector('#editOtherForm');
+        if (editOtherForm) {
+            editOtherForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const otherId = document.getElementById('editOtherId').value;
+                const otherToUpdate = data.others.find(o => o.id === otherId);
+                
+                if(otherToUpdate) {
+                    otherToUpdate.source = document.getElementById('editOtherSource').value;
+                    otherToUpdate.content = document.getElementById('editOtherContent').value;
+                    saveData();
+                    form.remove();
+                    alert('他人原则更新成功！');
+                }
+            });
+        }
+    }
+
+    function deleteOther(id) {
+        if(confirm('确定删除这个他人原则吗？')) {
+            const confirmInput = prompt('请输入 "DELETE" 确认删除操作：');
+            if(confirmInput === 'DELETE') {
+                data.others = data.others.filter(o => o.id !== id);
+                saveData();
+                alert('他人原则已删除');
+            }
+        }
+    }
+
+    // 4. 集合逻辑
+    function createCollection() {
+        const name = document.getElementById('collectionName').value;
+        if(name) {
+            data.collections.push({
+                id: generateId('collection'),
+                name: name,
+                cardIds: [] // 存储属于这个链接库的卡片ID
+            });
+            document.getElementById('collectionName').value = '';
+            saveData();
+            alert('链接库创建成功！');
+        } else {
+            alert('请输入链接库名称');
+        }
+    }
+
+    function renderCollections() {
+        const list = document.getElementById('collectionList');
+        if (!list) return;
+        
+        // 清空列表并添加表格
+        list.innerHTML = `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>链接库管理</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2;">
+                                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">链接库名称</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">卡片数量</th>
+                                <th style="padding: 12px; text-align: left; border-bottom: 1px solid #ddd;">编号</th>
+                                <th style="padding: 12px; text-align: right; border-bottom: 1px solid #ddd;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="collectionsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        const tableBody = document.getElementById('collectionsTableBody');
+        if (data.collections && Array.isArray(data.collections)) {
+            data.collections.forEach(collection => {
+                const collectionCards = data.cards.filter(card => collection.cardIds && collection.cardIds.includes(card.id));
+                tableBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee; transition: background-color 0.2s;">
+                        <td style="padding: 12px;">
+                            <a href="#" onclick="event.preventDefault(); viewCollection('${collection.id}')" style="font-weight: bold; color: var(--primary); text-decoration: none;">
+                                ${collection.name}
+                            </a>
+                        </td>
+                        <td style="padding: 12px;">${collectionCards.length}</td>
+                        <td style="padding: 12px; font-family: monospace; color: #666;">${collection.id}</td>
+                        <td style="padding: 12px; text-align: right;">
+                            <div style="display: inline-flex; gap: 8px;">
+                                <button class="btn btn-sm" onclick="addCardToCollection('${collection.id}')">添加卡片</button>
+                                <button class="btn btn-sm" onclick="viewCollection('${collection.id}')">查看</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCollection('${collection.id}')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #999;">
+                        暂无链接库，点击上方按钮创建
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // 查看链接库详情
+    function viewCollection(colId) {
+        const col = data.collections.find(c => c.id === colId);
+        if (!col) return;
+        
+        const colCards = data.cards.filter(c => col.cardIds && col.cardIds.includes(c.id));
+        
+        const list = document.getElementById('collectionList');
+        list.innerHTML = `
+            <div class="card" style="margin-bottom: 20px;">
+                <div class="collection-title">
+                    <h3>${col.name} (${colCards.length} 张卡片)</h3>
+                    <button class="btn" onclick="renderCollections()">返回链接库列表</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4>链接库内的卡片:</h4>
+                    <div class="grid" id="collectionCardsGrid"></div>
+                </div>
+            </div>
+        `;
+        
+        const grid = document.getElementById('collectionCardsGrid');
+        colCards.forEach(card => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <span class="card-id">${card.id}</span>
+                <h4>1. 情况</h4><p>${card.f1}</p>
+                <h4>2. 归类</h4><p>${card.f2}</p>
+                <h4>3. 原则权衡</h4><p>${card.f3}</p>
+                <h4>4. 思考</h4><p>${card.f4}</p>
+                <h4>5. 补充</h4><p>${card.f5}</p>
+                ${card.f6 ? `<div><strong>关联:</strong> ${card.f6}</div>` : ''}
+                ${card.img ? `<img src="${card.img}">` : ''}
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn" onclick="editCard('${card.id}')" style="margin-right:10px;">编辑</button>
+                    <button class="btn btn-danger" onclick="removeFromCollection('${col.id}', '${card.id}')">从集合中移除</button>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function addToCollection(colId, cardId) {
+        if(!cardId) return;
+        const col = data.collections.find(c => c.id === colId);
+        if(col && !col.cardIds.includes(cardId)) {
+            col.cardIds.push(cardId);
+            saveData();
+        }
+    }
+
+    function removeFromCollection(colId, cardId) {
+        const col = data.collections.find(c => c.id === colId);
+        col.cardIds = col.cardIds.filter(id => id !== cardId);
+        saveData();
+    }
+    
+    // 在链接库管理页面添加卡片
+    function addCardToCollection(colId) {
+        const col = data.collections.find(c => c.id === colId);
+        if (!col) return;
+        
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.zIndex = '1000';
+        
+        const modalContent = document.createElement('div');
+        modalContent.className = 'card';
+        modalContent.style.maxWidth = '600px';
+        modalContent.style.width = '90%';
+        modalContent.style.maxHeight = '80vh';
+        modalContent.style.overflowY = 'auto';
+        
+        let cardOptions = '';
+        if (data.cards && data.cards.length > 0) {
+            cardOptions = data.cards.map(card => {
+                // 检查卡片是否已经在链接库中
+                const isInCollection = col.cardIds && col.cardIds.includes(card.id);
+                return `
+                    <option value="${card.id}" ${isInCollection ? 'disabled' : ''}>
+                        ${card.id}: ${card.f1.substring(0, 30)}${card.f1.length > 30 ? '...' : ''}
+                        ${isInCollection ? '(已在链接库中)' : ''}
+                    </option>
+                `;
+            }).join('');
+        }
+        
+        modalContent.innerHTML = `
+            <h2>添加卡片到 ${col.name}</h2>
+            <div class="form-group">
+                <label>选择卡片:</label>
+                <select id="cardSelect" style="width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box;">
+                    <option value="">-- 选择卡片 --</option>
+                    ${cardOptions || '<option value="" disabled>暂无卡片</option>'}
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn btn-success" onclick="selectCardToAdd('${colId}')">添加</button>
+                <button class="btn" onclick="this.closest('.card').parentNode.remove()">取消</button>
+            </div>
+        `;
+        
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+    }
+    
+    // 选择卡片并添加到链接库
+    function selectCardToAdd(colId) {
+        const cardId = document.getElementById('cardSelect').value;
+        if (!cardId) {
+            alert('请选择要添加的卡片');
+            return;
+        }
+        
+        addToCollection(colId, cardId);
+        alert('卡片添加成功！');
+        
+        // 关闭模态框
+        const modal = document.querySelector('div[style*="position: fixed"]');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // 重新渲染链接库列表
+        renderCollections();
+    }
+
+    function deleteCollection(id) {
+        if(confirm('删除这个链接库？')) {
+            const confirmInput = prompt('请输入 "DELETE" 确认删除操作：');
+            if(confirmInput === 'DELETE') {
+                data.collections = data.collections.filter(c => c.id !== id);
+                saveData();
+                alert('链接库已删除');
+            }
+        }
+    }
+
+    // 搜索链接库
+    function searchCollections() {
+        const searchTerm = document.getElementById('collectionSearch').value.toLowerCase();
+        const tableBody = document.getElementById('collectionsTableBody');
+        
+        if(!searchTerm) {
+            renderCollections();
+            return;
+        }
+        
+        // 搜索所有链接库
+        const matchingCollections = data.collections.filter(collection => {
+            return collection.name.toLowerCase().includes(searchTerm);
+        });
+        
+        tableBody.innerHTML = '';
+        if(matchingCollections.length > 0) {
+            matchingCollections.forEach(collection => {
+                const collectionCards = data.cards.filter(card => collection.cardIds && collection.cardIds.includes(card.id));
+                tableBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #eee; transition: background-color 0.2s;">
+                        <td style="padding: 12px;">
+                            <a href="#" onclick="event.preventDefault(); viewCollection('${collection.id}')" style="font-weight: bold; color: var(--primary); text-decoration: none;">
+                                ${collection.name}
+                            </a>
+                        </td>
+                        <td style="padding: 12px;">${collectionCards.length}</td>
+                        <td style="padding: 12px; font-family: monospace; color: #666;">${collection.id}</td>
+                        <td style="padding: 12px; text-align: right;">
+                            <div style="display: inline-flex; gap: 8px;">
+                                <button class="btn btn-sm" onclick="addCardToCollection('${collection.id}')">添加卡片</button>
+                                <button class="btn btn-sm" onclick="viewCollection('${collection.id}')">查看</button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCollection('${collection.id}')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #999;">
+                        没有找到匹配的链接库
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    // 卡片盒子逻辑
+    function createDeck() {
+        const name = document.getElementById('deckName').value;
+        if(name) {
+            data.boxes.push({
+                id: 'B-' + Date.now(),
+                name: name
+            });
+            document.getElementById('deckName').value = '';
+            saveData();
+            alert('卡片盒子创建成功！');
+        } else {
+            alert('请输入盒子名称');
+        }
+    }
+
+    function renderDecks() {
+        const list = document.getElementById('deckList');
+        if (!list) return;
+        list.innerHTML = '<div class="grid">';
+        if (data.boxes && Array.isArray(data.boxes)) {
+            data.boxes.forEach(box => {
+                const boxCards = data.cards.filter(card => card.boxId === box.id);
+                list.innerHTML += `
+                    <div class="card">
+                        <h4>${box.name}</h4>
+                        <p>卡片数量: ${boxCards.length}</p>
+                        <button class="btn" onclick="viewDeck('${box.id}')" style="margin-top:10px; margin-right:10px;">查看卡片</button>
+                        <button class="btn btn-danger" onclick="deleteDeck('${box.id}')">删除卡片盒子</button>
+                    </div>
+                `;
+            });
+        }
+        list.innerHTML += '</div>';
+    }
+
+    function viewDeck(boxId) {
+        const box = data.boxes.find(d => d.id === boxId);
+        const boxCards = data.cards.filter(card => card.boxId === boxId);
+        
+        const list = document.getElementById('deckList');
+        list.innerHTML = `
+            <div class="card" style="margin-bottom: 20px;">
+                <h3>${box.name} (${boxCards.length} 张卡片)</h3>
+                <button class="btn" onclick="renderDecks()">返回卡片盒子列表</button>
+            </div>
+            <div class="grid" id="deckCardsGrid"></div>
+        `;
+        
+        const grid = document.getElementById('deckCardsGrid');
+        boxCards.forEach(card => {
+            const div = document.createElement('div');
+            div.className = 'card';
+            div.innerHTML = `
+                <span class="card-id">${card.id}</span>
+                <h4>1. 情况</h4><p>${card.f1}</p>
+                <h4>2. 归类</h4><p>${card.f2}</p>
+                <h4>3. 原则权衡</h4><p>${card.f3}</p>
+                <h4>4. 思考</h4><p>${card.f4}</p>
+                <h4>5. 补充</h4><p>${card.f5}</p>
+                ${card.f6 ? `<div><strong>关联:</strong> ${card.f6}</div>` : ''}
+                ${card.img ? `<img src="${card.img}">` : ''}
+                <div style="margin-top:15px; text-align:right;">
+                    <button class="btn" onclick="editCard('${card.id}')" style="margin-right:10px;">编辑</button>
+                    <button class="btn btn-danger" onclick="deleteCard('${card.id}')">删除</button>
+                </div>
+            `;
+            grid.appendChild(div);
+        });
+    }
+
+    function deleteDeck(id) {
+        if(confirm('确定删除这个卡片盒子吗？')) {
+            const confirmInput = prompt('请输入 "DELETE" 确认删除操作：');
+            if(confirmInput === 'DELETE') {
+                // 将该卡片盒子的卡片boxId设为空
+                data.cards.forEach(card => {
+                    if(card.boxId === id) {
+                        card.boxId = '';
+                    }
+                });
+                data.boxes = data.boxes.filter(d => d.id !== id);
+                saveData();
+                alert('卡片盒子已删除');
+            }
+        }
+    }
+
+    // 搜索卡片
+    function searchCards() {
+        const searchTerm = document.getElementById('deckSearch').value.toLowerCase();
+        const list = document.getElementById('deckList');
+        
+        if(!searchTerm) {
+            renderDecks();
+            return;
+        }
+        
+        list.innerHTML = '<div class="grid">';
+        
+        // 搜索所有卡片
+        const matchingCards = data.cards.filter(card => {
+            return (
+                card.f1.toLowerCase().includes(searchTerm) ||
+                card.f2.toLowerCase().includes(searchTerm) ||
+                card.f3.toLowerCase().includes(searchTerm) ||
+                card.f4.toLowerCase().includes(searchTerm) ||
+                card.f5.toLowerCase().includes(searchTerm) ||
+                card.f6.toLowerCase().includes(searchTerm)
+            );
+        });
+        
+        if(matchingCards.length > 0) {
+            matchingCards.forEach(card => {
+                const box = data.boxes.find(b => b.id === card.boxId);
+                list.innerHTML += `
+                    <div class="card">
+                        <span class="card-id">${card.id}</span>
+                        <h4>1. 情况</h4><p>${card.f1}</p>
+                        <h4>2. 归类</h4><p>${card.f2}</p>
+                        <h4>3. 原则权衡</h4><p>${card.f3}</p>
+                        ${box ? `<p style="margin-top:10px; font-size:0.9rem; color:var(--primary);">盒子：${box.name}</p>` : ''}
+                        <div style="margin-top:15px; text-align:right;">
+                            <button class="btn" onclick="editCard('${card.id}')" style="margin-right:10px;">编辑</button>
+                            <button class="btn btn-danger" onclick="deleteCard('${card.id}')">删除</button>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            list.innerHTML += '<div class="card"><p>没有找到匹配的卡片</p></div>';
+        }
+        
+        list.innerHTML += '</div>';
+    }
+
+    // 更新卡片盒子选择下拉框
+    function updateDeckSelect() {
+        const select = document.getElementById('deckSelect');
+        if (!select) return;
+        select.innerHTML = '<option value="">-- 选择卡片盒子 --</option>';
+        if (data.boxes && Array.isArray(data.boxes)) {
+            data.boxes.forEach(box => {
+                select.innerHTML += `<option value="${box.id}">${box.name}</option>`;
+            });
+        }
+    }
+
+    // 统一渲染
+    function renderAll() {
+        renderDecks();
+        renderBasics();
+        renderOthers();
+        renderCollections();
+        updateDeckSelect();
+    }
+
+
+
+    // 清除所有数据
+    function clearAllData() {
+        // 第一层保护：初始确认
+        if(confirm('⚠️ 警告：清除所有数据将永久删除所有记录，此操作不可恢复！')) {
+            
+            // 第二层保护：文本输入确认
+            const confirmInput = prompt('请输入 "DELETE ALL" 确认清除所有数据：');
+            if(confirmInput === 'DELETE ALL') {
+                
+                // 第三层保护：再次确认
+                if(confirm('🔴 最终警告：所有数据将被永久删除，包括所有卡片、牌组、原则和集合。确定继续吗？')) {
+                    
+                    // 第四层保护：日期确认
+                    const today = new Date().toLocaleDateString();
+                    const dateInput = prompt(`请输入今天的日期 "${today}" 进行确认：`);
+                    if(dateInput === today) {
+                        
+                        // 第五层保护：最后确认
+                        if(confirm('✅ 确认清除所有数据？')) {
+                            localStorage.removeItem('principleData');
+                            data = {
+                                decks: [],
+                                cards: [],
+                                basics: [],
+                                others: [],
+                                collections: []
+                            };
+                            renderAll();
+                            alert('所有数据已清除');
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 导出数据函数
+    function exportBoxes() {
+        const exportData = {
+            boxes: data.boxes,
+            cards: data.cards
+        };
+        downloadJSON(exportData, 'card_boxes_data.json');
+    }
+
+    function exportBasics() {
+        const exportData = {
+            basics: data.basics
+        };
+        downloadJSON(exportData, 'basic_principles_data.json');
+    }
+
+    function exportOthers() {
+        const exportData = {
+            others: data.others
+        };
+        downloadJSON(exportData, 'other_principles_data.json');
+    }
+
+    function exportCollections() {
+        const exportData = {
+            collections: data.collections,
+            cards: data.cards.filter(card => {
+                return data.collections.some(col => col.cardIds && col.cardIds.includes(card.id));
+            })
+        };
+        downloadJSON(exportData, 'collections_data.json');
+    }
+
+    // 下载JSON文件的通用函数
+    function downloadJSON(data, filename) {
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('数据导出成功！');
+    }
+
+    // 初始化
+    loadData();
+    renderAll();
+
+</script>
+
+</body>
+</html>
